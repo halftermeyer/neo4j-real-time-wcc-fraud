@@ -410,6 +410,8 @@ WHERE EXISTS {(ev)-[:COMPONENT_PARENT]->*(e:Event {event_id: $event_id})}
 RETURN [(ev)-[r:WITH]->(x)| [ev, r, x]] AS events_with_things
 ```
 
+<img width="1012" height="597" alt="comp_in_context" src="https://github.com/user-attachments/assets/95bcc6ef-36ae-498d-b314-d38e1d0f88dc" />
+
 ### 5.7. Temporal Analysis: Connected Components As-Of Date
 
 Query the state of connected components as they existed at a specific point in time. This is crucial for training ML models without future knowledge contamination:
@@ -425,6 +427,20 @@ WITH cc, collect(ev) AS cc_elements
 ORDER BY size(cc_elements) DESC
 RETURN cc, cc_elements
 ```
+
+╒══════════════╤════════════════════════════════════════════════════════════════╕
+│cc.event_id   │component                                                       │
+╞══════════════╪════════════════════════════════════════════════════════════════╡
+│"evt_fraud_a4"│["evt_fraud_a4", "evt_fraud_a3", "evt_fraud_a2", "evt_fraud_a1"]│
+├──────────────┼────────────────────────────────────────────────────────────────┤
+│"evt_fraud_b3"│["evt_fraud_b3", "evt_fraud_b2", "evt_fraud_b1"]                │
+├──────────────┼────────────────────────────────────────────────────────────────┤
+│"evt_legit_1" │["evt_legit_1"]                                                 │
+├──────────────┼────────────────────────────────────────────────────────────────┤
+│"evt_legit_3" │["evt_legit_3"]                                                 │
+├──────────────┼────────────────────────────────────────────────────────────────┤
+│"evt_legit_2" │["evt_legit_2"]                                                 │
+└──────────────┴────────────────────────────────────────────────────────────────┘
 
 ### 5.8. Compute Component Metrics
 
