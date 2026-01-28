@@ -289,9 +289,9 @@ The dataset includes 11 events organized into:
 
 #### 4.2.1 Alternative: Import Larger Dataset with Neo4j Data Importer
 
-For testing at scale, you can use the provided [`data-importer-real-time-fraud.zip`](./data-importer-real-time-fraud.zip) archive containing a larger dataset with 7,800 events and the complete import model:
+For testing at scale, you can use the provided [`data-importer-real-time-fraud.zip`](https://github.com/halftermeyer/neo4j-real-time-wcc-fraud/raw/refs/heads/main/data-importer-real-time-fraud.zip) archive containing a larger dataset with 7,800 events and the complete import model:
 
-1. Download or locate the [`data-importer-real-time-fraud.zip`](./data-importer-real-time-fraud.zip) file
+1. Download or locate the [`data-importer-real-time-fraud.zip`](https://github.com/halftermeyer/neo4j-real-time-wcc-fraud/raw/refs/heads/main/data-importer-real-time-fraud.zip) file
 2. Open Neo4j Data Importer in your Neo4j environment
 3. Click "Load Model (with data)" and select the archive file
 4. The archive contains:
