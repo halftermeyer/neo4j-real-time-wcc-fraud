@@ -540,7 +540,7 @@ This query extracts features for events in the training dataset by examining the
 // enrich training dataset with component metrics
 CYPHER 25 runtime=parallel
 MATCH (source:Event WHERE source.timestamp <= $asOfDate)
-MATCH (cc)-[:COMPONENT_PARENT]->(source)
+OPTIONAL MATCH (cc)-[:COMPONENT_PARENT]->(source)
 WITH source, collect(cc) AS ccs
 WITH
   source, ccs,
@@ -554,6 +554,21 @@ RETURN
   coll.max(diameters) AS max_connected_component_diameter,
   coll.max(velocities) AS max_connected_component_velocity,
   size(ccs) AS distinct_connected_components_count
+```
+
+``csv
+// Result
+event_id,max_connected_component_size,max_connected_component_diameter,max_connected_component_velocity,distinct_connected_components_count
+evt_fraud_a1,null,null,null,0
+evt_fraud_a3,2,1,0.016666666666666666,1
+evt_fraud_a2,1,0,0.0,1
+evt_fraud_b1,null,null,null,0
+evt_fraud_a4,3,2,0.01,1
+evt_fraud_b3,2,1,0.0011111111111111111,1
+evt_fraud_b2,1,0,0.0,1
+evt_legit_1,null,null,null,0
+evt_legit_3,null,null,null,0
+evt_legit_2,null,null,null,0
 ```
 
 **Key aspects:**
