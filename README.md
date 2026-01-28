@@ -583,8 +583,8 @@ This query extracts the same features for a new incoming event, enabling real-ti
 
 ```cypher
 CYPHER 25
-MATCH (new_event:Event {event_id: $event_id})
-MATCH (new_event)-[:WITH]->()<-[:WITH]-()
+MATCH (new_event:Event {event_id: "e85b9c886-f8f0-44fb-b579-a3537310249c"})
+MATCH (new_event)-[:WITH]->()<-[:WITH]-(related_event WHERE related_event.timestamp < new_event.timestamp)
  (
  ()-[:COMPONENT_PARENT]->(x:ComponentNode)
 WHERE x <> new_event
