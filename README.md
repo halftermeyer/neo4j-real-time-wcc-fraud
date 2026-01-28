@@ -555,7 +555,7 @@ RETURN
   size(ccs) AS distinct_connected_components_count
 ```
 
-``csv
+```csv
 // Result
 event_id,max_connected_component_size,max_connected_component_diameter,max_connected_component_velocity,distinct_connected_components_count
 evt_fraud_a1,null,null,null,0
@@ -605,6 +605,12 @@ RETURN
   coll.max(diameters) AS max_connected_component_diameter,
   coll.max(velocities) AS max_connected_component_velocity,
   size(ccs) AS distinct_connected_components_count
+```
+
+```csv
+// Result
+event_id,max_connected_component_size,max_connected_component_diameter,max_connected_component_velocity,distinct_connected_components_count
+evt_bridge,4,3,0.008333333333333333,2
 ```
 
 **Key aspects:**
