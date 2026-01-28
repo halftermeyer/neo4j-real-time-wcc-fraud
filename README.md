@@ -287,6 +287,26 @@ The dataset includes 11 events organized into:
 
 <img width="1012" height="597" alt="graph_only" src="https://github.com/user-attachments/assets/b4b6e196-d32b-474b-8fed-a13384bc1262" />
 
+#### 4.2.1 Alternative: Import Larger Dataset with Neo4j Data Importer
+
+For testing at scale, you can use the provided `data-importer-real-time-fraud.zip` archive containing a larger dataset with 7,800 events and the complete import model:
+
+1. Download or locate the `data-importer-real-time-fraud.zip` file
+2. Open Neo4j Data Importer in your Neo4j environment
+3. Click "Load Model (with data)" and select the archive file
+4. The archive contains:
+   * `credit_fraud_dataset.csv` - 7,800 synthetic fraud events
+   * `neo4j_importer_model.json` - Complete graph model mapping
+5. Review the mapping (Event-Thing model with all entity types)
+6. Click "Run Import" to load the full dataset
+
+This larger dataset provides more realistic patterns for testing component metrics, diameter computation, and feature extraction at scale. The same queries in this documentation will work with this dataset, but computation times will be longer due to the larger graph size.
+
+**Dataset characteristics:**
+* 7,800 events spanning multiple days
+* Realistic distribution of interaction types (login, transaction, update)
+* Complex connected component patterns
+* Suitable for performance testing and scalability analysis
 
 ## 5. Cypher Queries
 
