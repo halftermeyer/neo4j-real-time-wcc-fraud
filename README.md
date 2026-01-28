@@ -429,7 +429,6 @@ RETURN cc, cc_elements
 ```
 
 ```csv
-// Result
 cc.event_id,component
 evt_fraud_a4,"[evt_fraud_a4, evt_fraud_a3, evt_fraud_a2, evt_fraud_a1]"
 evt_fraud_b3,"[evt_fraud_b3, evt_fraud_b2, evt_fraud_b1]"
