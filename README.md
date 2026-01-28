@@ -428,19 +428,15 @@ ORDER BY size(cc_elements) DESC
 RETURN cc, cc_elements
 ```
 
-╒══════════════╤════════════════════════════════════════════════════════════════╕
-│cc.event_id   │component                                                       │
-╞══════════════╪════════════════════════════════════════════════════════════════╡
-│"evt_fraud_a4"│["evt_fraud_a4", "evt_fraud_a3", "evt_fraud_a2", "evt_fraud_a1"]│
-├──────────────┼────────────────────────────────────────────────────────────────┤
-│"evt_fraud_b3"│["evt_fraud_b3", "evt_fraud_b2", "evt_fraud_b1"]                │
-├──────────────┼────────────────────────────────────────────────────────────────┤
-│"evt_legit_1" │["evt_legit_1"]                                                 │
-├──────────────┼────────────────────────────────────────────────────────────────┤
-│"evt_legit_3" │["evt_legit_3"]                                                 │
-├──────────────┼────────────────────────────────────────────────────────────────┤
-│"evt_legit_2" │["evt_legit_2"]                                                 │
-└──────────────┴────────────────────────────────────────────────────────────────┘
+```csv
+// Result
+cc.event_id,component
+evt_fraud_a4,"[evt_fraud_a4, evt_fraud_a3, evt_fraud_a2, evt_fraud_a1]"
+evt_fraud_b3,"[evt_fraud_b3, evt_fraud_b2, evt_fraud_b1]"
+evt_legit_1,[evt_legit_1]
+evt_legit_3,[evt_legit_3]
+evt_legit_2,[evt_legit_2]
+```
 
 ### 5.8. Compute Component Metrics
 
