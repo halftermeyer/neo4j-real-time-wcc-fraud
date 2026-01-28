@@ -300,7 +300,7 @@ For testing at scale, you can use the provided [`data-importer-real-time-fraud.z
 5. Review the mapping (Event-Thing model with all entity types)
 6. Click "Run Import" to load the full dataset
 
-This larger dataset provides more realistic patterns for testing component metrics, diameter computation, and feature extraction at scale. The same queries in this documentation will work with this dataset, but computation times will be longer due to the larger graph size.
+This larger dataset provides more realistic patterns for testing component metrics, diameter computation, and feature extraction at scale. The same queries in this documentation will work with this dataset, but computation times of the data structure will be longer due to the larger graph size.
 
 **Dataset characteristics:**
 * 7,800 events spanning multiple days
@@ -314,14 +314,26 @@ This larger dataset provides more realistic patterns for testing component metri
 
 ### 5.1. Set Analysis Parameters
 
-Define parameters for temporal analysis and testing:
+Define parameters for temporal analysis and testing
+
+#### 5.1.1. Demo dataset
 
 ```cypher
 :param {
-  asOfDate: datetime('2024-01-15T17:00:00Z'),  // After all test events
-  event_id: "evt_bridge"  // Test the bridging event
+  asOfDate: datetime('2024-01-15T17:00:00Z')
+  event_id: "evt_bridge"
 }
 ```
+
+#### 5.1.1. Alternative dataset
+
+```cypher
+:param {
+  asOfDate: datetime('2024-01-15T17:00:00Z')
+  event_id: "e85b9c886-f8f0-44fb-b579-a3537310249c"
+}
+```
+
 
 ### 5.2. Create SEQUENTIALLY_RELATED Relationships
 
