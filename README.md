@@ -285,6 +285,9 @@ The dataset includes 11 events organized into:
 **Legitimate Events (3 events):** Isolated activity with no shared entities
 * Events: `evt_legit_1`, `evt_legit_2`, `evt_legit_3`
 
+<img width="1012" height="597" alt="graph_only" src="https://github.com/user-attachments/assets/b4b6e196-d32b-474b-8fed-a13384bc1262" />
+
+
 ## 5. Cypher Queries
 
 > **Note:** These Cypher queries are compatible with Neo4j Version 2025.06+ and Cypher 25.
@@ -335,6 +338,9 @@ OPTIONAL MATCH (source)-[:SEQUENTIALLY_RELATED]->(target)
 RETURN gds.graph.project(
   'wcc_graph', source, target, {});
 ```
+
+<img width="1012" height="597" alt="graph_seq" src="https://github.com/user-attachments/assets/4c2180a3-6946-4dd9-96a6-6e65a92c9326" />
+
 
 ### 5.4. Build COMPONENT_PARENT Union-Find Structure
 
@@ -390,6 +396,9 @@ CALL (e) {
   MERGE (cc)-[:COMPONENT_PARENT]->(e)
 } IN TRANSACTIONS OF 100 ROWS
 ```
+
+<img width="1050" height="637" alt="graph" src="https://github.com/user-attachments/assets/f128c1e3-7a9e-4819-bb89-4e2247df0e7b" />
+
 
 ### 5.6. Show Event's Connected Component with Context
 
