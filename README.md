@@ -164,107 +164,119 @@ FOR (e:Event) ON (e.timestamp);
 
 CALL db.awaitIndexes(300);
 
-// Create entity nodes
-CREATE (:EmailAddress {email: 'fraud@example.com'});
-CREATE (:EmailAddress {email: 'fraud2@example.com'});
-CREATE (:EmailAddress {email: 'legitimate1@example.com'});
-CREATE (:EmailAddress {email: 'legitimate2@example.com'});
-CREATE (:EmailAddress {email: 'legitimate3@example.com'});
-CREATE (:IPAddress {ip_address: '192.168.1.10'});
-CREATE (:IPAddress {ip_address: '192.168.1.11'});
-CREATE (:IPAddress {ip_address: '10.0.0.5'});
-CREATE (:IPAddress {ip_address: '172.16.0.20'});
-CREATE (:IPAddress {ip_address: '203.0.113.50'});
-CREATE (:CreditCard {credit_card_id: 'cc_stolen_001'});
-CREATE (:CreditCard {credit_card_id: 'cc_legit_001'});
-CREATE (:CreditCard {credit_card_id: 'cc_legit_002'});
-CREATE (:CreditCard {credit_card_id: 'cc_legit_003'});
-CREATE (:Device {device_id: 'device_fraud_001'});
-CREATE (:Device {device_id: 'device_fraud_002'});
-CREATE (:Device {device_id: 'device_legit_001'});
-CREATE (:Device {device_id: 'device_legit_002'});
-CREATE (:Device {device_id: 'device_legit_003'});
-CREATE (:BankAccount {bank_account_id: 'ba_fraud_001'});
-CREATE (:BankAccount {bank_account_id: 'ba_fraud_002'});
-CREATE (:BankAccount {bank_account_id: 'ba_legit_001'});
-CREATE (:BankAccount {bank_account_id: 'ba_legit_002'});
-CREATE (:Session {session_id: 'session_001'});
-CREATE (:Session {session_id: 'session_002'});
-CREATE (:Session {session_id: 'session_003'});
-CREATE (:Session {session_id: 'session_004'});
-CREATE (:Session {session_id: 'session_005'});
-CREATE (:Session {session_id: 'session_006'});
-CREATE (:Session {session_id: 'session_007'});
-CREATE (:Session {session_id: 'session_008'});
-
-// Create events - Fraud Ring A (chain structure, diameter > 1)
-CREATE (:Event {event_id: 'evt_fraud_a1', timestamp: datetime('2024-01-15T10:00:00Z'), interaction_type: 'login', transaction_amount: null});
-CREATE (:Event {event_id: 'evt_fraud_a2', timestamp: datetime('2024-01-15T10:02:00Z'), interaction_type: 'transaction', transaction_amount: 1500.00});
-CREATE (:Event {event_id: 'evt_fraud_a3', timestamp: datetime('2024-01-15T10:05:00Z'), interaction_type: 'transaction', transaction_amount: 2300.00});
-CREATE (:Event {event_id: 'evt_fraud_a4', timestamp: datetime('2024-01-15T10:08:00Z'), interaction_type: 'update', transaction_amount: null});
-
-// Create events - Fraud Ring B (star structure, diameter = 1)
-CREATE (:Event {event_id: 'evt_fraud_b1', timestamp: datetime('2024-01-15T14:00:00Z'), interaction_type: 'transaction', transaction_amount: 500.00});
-CREATE (:Event {event_id: 'evt_fraud_b2', timestamp: datetime('2024-01-15T14:30:00Z'), interaction_type: 'transaction', transaction_amount: 750.00});
-CREATE (:Event {event_id: 'evt_fraud_b3', timestamp: datetime('2024-01-15T15:00:00Z'), interaction_type: 'transaction', transaction_amount: 1200.00});
-
-// Create event - Bridging event (connects both rings)
-CREATE (:Event {event_id: 'evt_bridge', timestamp: datetime('2024-01-15T16:00:00Z'), interaction_type: 'transaction', transaction_amount: 3500.00});
-
-// Create events - Legitimate isolated events
-CREATE (:Event {event_id: 'evt_legit_1', timestamp: datetime('2024-01-15T09:00:00Z'), interaction_type: 'login', transaction_amount: null});
-CREATE (:Event {event_id: 'evt_legit_2', timestamp: datetime('2024-01-15T11:00:00Z'), interaction_type: 'transaction', transaction_amount: 45.00});
-CREATE (:Event {event_id: 'evt_legit_3', timestamp: datetime('2024-01-15T13:00:00Z'), interaction_type: 'update', transaction_amount: null});
-
-// Create WITH relationships - Fraud Ring A (chain: a1←IP1→a2←Email2/Bank→a3←Device2→a4)
-MATCH (e:Event {event_id: 'evt_fraud_a1'}), (ip:IPAddress {ip_address: '192.168.1.10'}) CREATE (e)-[:WITH]->(ip);
-MATCH (e:Event {event_id: 'evt_fraud_a1'}), (email:EmailAddress {email: 'fraud@example.com'}) CREATE (e)-[:WITH]->(email);
-MATCH (e:Event {event_id: 'evt_fraud_a1'}), (s:Session {session_id: 'session_001'}) CREATE (e)-[:WITH]->(s);
-MATCH (e:Event {event_id: 'evt_fraud_a2'}), (ip:IPAddress {ip_address: '192.168.1.10'}) CREATE (e)-[:WITH]->(ip);
-MATCH (e:Event {event_id: 'evt_fraud_a2'}), (email:EmailAddress {email: 'fraud2@example.com'}) CREATE (e)-[:WITH]->(email);
-MATCH (e:Event {event_id: 'evt_fraud_a2'}), (ba:BankAccount {bank_account_id: 'ba_fraud_001'}) CREATE (e)-[:WITH]->(ba);
-MATCH (e:Event {event_id: 'evt_fraud_a2'}), (s:Session {session_id: 'session_002'}) CREATE (e)-[:WITH]->(s);
-MATCH (e:Event {event_id: 'evt_fraud_a3'}), (email:EmailAddress {email: 'fraud2@example.com'}) CREATE (e)-[:WITH]->(email);
-MATCH (e:Event {event_id: 'evt_fraud_a3'}), (ba:BankAccount {bank_account_id: 'ba_fraud_001'}) CREATE (e)-[:WITH]->(ba);
-MATCH (e:Event {event_id: 'evt_fraud_a3'}), (d:Device {device_id: 'device_fraud_002'}) CREATE (e)-[:WITH]->(d);
-MATCH (e:Event {event_id: 'evt_fraud_a3'}), (s:Session {session_id: 'session_003'}) CREATE (e)-[:WITH]->(s);
-MATCH (e:Event {event_id: 'evt_fraud_a4'}), (d:Device {device_id: 'device_fraud_002'}) CREATE (e)-[:WITH]->(d);
-MATCH (e:Event {event_id: 'evt_fraud_a4'}), (ip:IPAddress {ip_address: '192.168.1.11'}) CREATE (e)-[:WITH]->(ip);
-MATCH (e:Event {event_id: 'evt_fraud_a4'}), (s:Session {session_id: 'session_004'}) CREATE (e)-[:WITH]->(s);
-
-// Create WITH relationships - Fraud Ring B (star: all share credit card and device)
-MATCH (e:Event {event_id: 'evt_fraud_b1'}), (cc:CreditCard {credit_card_id: 'cc_stolen_001'}) CREATE (e)-[:WITH]->(cc);
-MATCH (e:Event {event_id: 'evt_fraud_b1'}), (d:Device {device_id: 'device_fraud_001'}) CREATE (e)-[:WITH]->(d);
-MATCH (e:Event {event_id: 'evt_fraud_b1'}), (ip:IPAddress {ip_address: '10.0.0.5'}) CREATE (e)-[:WITH]->(ip);
-MATCH (e:Event {event_id: 'evt_fraud_b1'}), (s:Session {session_id: 'session_005'}) CREATE (e)-[:WITH]->(s);
-MATCH (e:Event {event_id: 'evt_fraud_b2'}), (cc:CreditCard {credit_card_id: 'cc_stolen_001'}) CREATE (e)-[:WITH]->(cc);
-MATCH (e:Event {event_id: 'evt_fraud_b2'}), (d:Device {device_id: 'device_fraud_001'}) CREATE (e)-[:WITH]->(d);
-MATCH (e:Event {event_id: 'evt_fraud_b2'}), (ip:IPAddress {ip_address: '172.16.0.20'}) CREATE (e)-[:WITH]->(ip);
-MATCH (e:Event {event_id: 'evt_fraud_b2'}), (s:Session {session_id: 'session_006'}) CREATE (e)-[:WITH]->(s);
-MATCH (e:Event {event_id: 'evt_fraud_b3'}), (cc:CreditCard {credit_card_id: 'cc_stolen_001'}) CREATE (e)-[:WITH]->(cc);
-MATCH (e:Event {event_id: 'evt_fraud_b3'}), (d:Device {device_id: 'device_fraud_001'}) CREATE (e)-[:WITH]->(d);
-MATCH (e:Event {event_id: 'evt_fraud_b3'}), (ip:IPAddress {ip_address: '203.0.113.50'}) CREATE (e)-[:WITH]->(ip);
-MATCH (e:Event {event_id: 'evt_fraud_b3'}), (s:Session {session_id: 'session_007'}) CREATE (e)-[:WITH]->(s);
-
-// Create WITH relationships - Bridging event
-MATCH (e:Event {event_id: 'evt_bridge'}), (ip:IPAddress {ip_address: '192.168.1.10'}) CREATE (e)-[:WITH]->(ip);
-MATCH (e:Event {event_id: 'evt_bridge'}), (cc:CreditCard {credit_card_id: 'cc_stolen_001'}) CREATE (e)-[:WITH]->(cc);
-MATCH (e:Event {event_id: 'evt_bridge'}), (d:Device {device_id: 'device_fraud_001'}) CREATE (e)-[:WITH]->(d);
-MATCH (e:Event {event_id: 'evt_bridge'}), (ba:BankAccount {bank_account_id: 'ba_fraud_002'}) CREATE (e)-[:WITH]->(ba);
-MATCH (e:Event {event_id: 'evt_bridge'}), (s:Session {session_id: 'session_008'}) CREATE (e)-[:WITH]->(s);
-
-// Create WITH relationships - Legitimate events (isolated)
-MATCH (e:Event {event_id: 'evt_legit_1'}), (email:EmailAddress {email: 'legitimate1@example.com'}) CREATE (e)-[:WITH]->(email);
-MATCH (e:Event {event_id: 'evt_legit_1'}), (cc:CreditCard {credit_card_id: 'cc_legit_001'}) CREATE (e)-[:WITH]->(cc);
-MATCH (e:Event {event_id: 'evt_legit_1'}), (d:Device {device_id: 'device_legit_001'}) CREATE (e)-[:WITH]->(d);
-MATCH (e:Event {event_id: 'evt_legit_2'}), (email:EmailAddress {email: 'legitimate2@example.com'}) CREATE (e)-[:WITH]->(email);
-MATCH (e:Event {event_id: 'evt_legit_2'}), (cc:CreditCard {credit_card_id: 'cc_legit_002'}) CREATE (e)-[:WITH]->(cc);
-MATCH (e:Event {event_id: 'evt_legit_2'}), (d:Device {device_id: 'device_legit_002'}) CREATE (e)-[:WITH]->(d);
-MATCH (e:Event {event_id: 'evt_legit_2'}), (ba:BankAccount {bank_account_id: 'ba_legit_001'}) CREATE (e)-[:WITH]->(ba);
-MATCH (e:Event {event_id: 'evt_legit_3'}), (email:EmailAddress {email: 'legitimate3@example.com'}) CREATE (e)-[:WITH]->(email);
-MATCH (e:Event {event_id: 'evt_legit_3'}), (cc:CreditCard {credit_card_id: 'cc_legit_003'}) CREATE (e)-[:WITH]->(cc);
-MATCH (e:Event {event_id: 'evt_legit_3'}), (d:Device {device_id: 'device_legit_003'}) CREATE (e)-[:WITH]->(d);
-MATCH (e:Event {event_id: 'evt_legit_3'}), (ba:BankAccount {bank_account_id: 'ba_legit_002'}) CREATE (e)-[:WITH]->(ba);
+// Create all nodes and relationships in single statement
+CREATE
+  // Email addresses
+  (email_fraud1:EmailAddress {email: 'fraud@example.com'}),
+  (email_fraud2:EmailAddress {email: 'fraud2@example.com'}),
+  (email_legit1:EmailAddress {email: 'legitimate1@example.com'}),
+  (email_legit2:EmailAddress {email: 'legitimate2@example.com'}),
+  (email_legit3:EmailAddress {email: 'legitimate3@example.com'}),
+  
+  // IP addresses
+  (ip1:IPAddress {ip_address: '192.168.1.10'}),
+  (ip2:IPAddress {ip_address: '192.168.1.11'}),
+  (ip3:IPAddress {ip_address: '10.0.0.5'}),
+  (ip4:IPAddress {ip_address: '172.16.0.20'}),
+  (ip5:IPAddress {ip_address: '203.0.113.50'}),
+  
+  // Credit cards
+  (cc_stolen:CreditCard {credit_card_id: 'cc_stolen_001'}),
+  (cc_legit1:CreditCard {credit_card_id: 'cc_legit_001'}),
+  (cc_legit2:CreditCard {credit_card_id: 'cc_legit_002'}),
+  (cc_legit3:CreditCard {credit_card_id: 'cc_legit_003'}),
+  
+  // Devices
+  (dev_fraud1:Device {device_id: 'device_fraud_001'}),
+  (dev_fraud2:Device {device_id: 'device_fraud_002'}),
+  (dev_legit1:Device {device_id: 'device_legit_001'}),
+  (dev_legit2:Device {device_id: 'device_legit_002'}),
+  (dev_legit3:Device {device_id: 'device_legit_003'}),
+  
+  // Bank accounts
+  (ba_fraud1:BankAccount {bank_account_id: 'ba_fraud_001'}),
+  (ba_fraud2:BankAccount {bank_account_id: 'ba_fraud_002'}),
+  (ba_legit1:BankAccount {bank_account_id: 'ba_legit_001'}),
+  (ba_legit2:BankAccount {bank_account_id: 'ba_legit_002'}),
+  
+  // Sessions
+  (sess1:Session {session_id: 'session_001'}),
+  (sess2:Session {session_id: 'session_002'}),
+  (sess3:Session {session_id: 'session_003'}),
+  (sess4:Session {session_id: 'session_004'}),
+  (sess5:Session {session_id: 'session_005'}),
+  (sess6:Session {session_id: 'session_006'}),
+  (sess7:Session {session_id: 'session_007'}),
+  (sess8:Session {session_id: 'session_008'}),
+  
+  // Events - Fraud Ring A (chain structure, diameter > 1)
+  (evt_a1:Event {event_id: 'evt_fraud_a1', timestamp: datetime('2024-01-15T10:00:00Z'), interaction_type: 'login', transaction_amount: null}),
+  (evt_a2:Event {event_id: 'evt_fraud_a2', timestamp: datetime('2024-01-15T10:02:00Z'), interaction_type: 'transaction', transaction_amount: 1500.00}),
+  (evt_a3:Event {event_id: 'evt_fraud_a3', timestamp: datetime('2024-01-15T10:05:00Z'), interaction_type: 'transaction', transaction_amount: 2300.00}),
+  (evt_a4:Event {event_id: 'evt_fraud_a4', timestamp: datetime('2024-01-15T10:08:00Z'), interaction_type: 'update', transaction_amount: null}),
+  
+  // Events - Fraud Ring B (star structure, diameter = 1)
+  (evt_b1:Event {event_id: 'evt_fraud_b1', timestamp: datetime('2024-01-15T14:00:00Z'), interaction_type: 'transaction', transaction_amount: 500.00}),
+  (evt_b2:Event {event_id: 'evt_fraud_b2', timestamp: datetime('2024-01-15T14:30:00Z'), interaction_type: 'transaction', transaction_amount: 750.00}),
+  (evt_b3:Event {event_id: 'evt_fraud_b3', timestamp: datetime('2024-01-15T15:00:00Z'), interaction_type: 'transaction', transaction_amount: 1200.00}),
+  
+  // Event - Bridging event
+  (evt_bridge:Event {event_id: 'evt_bridge', timestamp: datetime('2024-01-15T16:00:00Z'), interaction_type: 'transaction', transaction_amount: 3500.00}),
+  
+  // Events - Legitimate isolated events
+  (evt_leg1:Event {event_id: 'evt_legit_1', timestamp: datetime('2024-01-15T09:00:00Z'), interaction_type: 'login', transaction_amount: null}),
+  (evt_leg2:Event {event_id: 'evt_legit_2', timestamp: datetime('2024-01-15T11:00:00Z'), interaction_type: 'transaction', transaction_amount: 45.00}),
+  (evt_leg3:Event {event_id: 'evt_legit_3', timestamp: datetime('2024-01-15T13:00:00Z'), interaction_type: 'update', transaction_amount: null}),
+  
+  // Fraud Ring A relationships (chain: a1←IP1→a2←Email2/Bank→a3←Device2→a4)
+  (evt_a1)-[:WITH]->(ip1),
+  (evt_a1)-[:WITH]->(email_fraud1),
+  (evt_a1)-[:WITH]->(sess1),
+  (evt_a2)-[:WITH]->(ip1),
+  (evt_a2)-[:WITH]->(email_fraud2),
+  (evt_a2)-[:WITH]->(ba_fraud1),
+  (evt_a2)-[:WITH]->(sess2),
+  (evt_a3)-[:WITH]->(email_fraud2),
+  (evt_a3)-[:WITH]->(ba_fraud1),
+  (evt_a3)-[:WITH]->(dev_fraud2),
+  (evt_a3)-[:WITH]->(sess3),
+  (evt_a4)-[:WITH]->(dev_fraud2),
+  (evt_a4)-[:WITH]->(ip2),
+  (evt_a4)-[:WITH]->(sess4),
+  
+  // Fraud Ring B relationships (star: all share credit card and device)
+  (evt_b1)-[:WITH]->(cc_stolen),
+  (evt_b1)-[:WITH]->(dev_fraud1),
+  (evt_b1)-[:WITH]->(ip3),
+  (evt_b1)-[:WITH]->(sess5),
+  (evt_b2)-[:WITH]->(cc_stolen),
+  (evt_b2)-[:WITH]->(dev_fraud1),
+  (evt_b2)-[:WITH]->(ip4),
+  (evt_b2)-[:WITH]->(sess6),
+  (evt_b3)-[:WITH]->(cc_stolen),
+  (evt_b3)-[:WITH]->(dev_fraud1),
+  (evt_b3)-[:WITH]->(ip5),
+  (evt_b3)-[:WITH]->(sess7),
+  
+  // Bridging event relationships
+  (evt_bridge)-[:WITH]->(ip1),
+  (evt_bridge)-[:WITH]->(cc_stolen),
+  (evt_bridge)-[:WITH]->(dev_fraud1),
+  (evt_bridge)-[:WITH]->(ba_fraud2),
+  (evt_bridge)-[:WITH]->(sess8),
+  
+  // Legitimate event relationships (isolated)
+  (evt_leg1)-[:WITH]->(email_legit1),
+  (evt_leg1)-[:WITH]->(cc_legit1),
+  (evt_leg1)-[:WITH]->(dev_legit1),
+  (evt_leg2)-[:WITH]->(email_legit2),
+  (evt_leg2)-[:WITH]->(cc_legit2),
+  (evt_leg2)-[:WITH]->(dev_legit2),
+  (evt_leg2)-[:WITH]->(ba_legit1),
+  (evt_leg3)-[:WITH]->(email_legit3),
+  (evt_leg3)-[:WITH]->(cc_legit3),
+  (evt_leg3)-[:WITH]->(dev_legit3),
+  (evt_leg3)-[:WITH]->(ba_legit2);
 ```
 
 The dataset includes 11 events organized into:
