@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-In the rapidly evolving landscape of financial services, particularly in buy-now-pay-later (BNPL) and digital lending platforms, detecting fraudulent activity in real-time is critical for protecting both businesses and consumers. The Real-Time Fraud Detection use case addresses a fundamental challenge: identifying sophisticated patterns in event networks and synthetic identity schemes as they emerge, using temporal graph analysis to engineer features for machine learning models. By leveraging Neo4j's graph database capabilities and Cypher 25, organizations can model complex event sequences, track entity relationships over time, and compute graph-based metrics that reveal patterns invisible to traditional approaches. These capabilities enable proactive fraud prevention, reduce financial losses, and maintain trust in digital financial ecosystems.
+In the rapidly evolving landscape of financial services, particularly in buy-now-pay-later (BNPL) and online loan marketplaces, detecting fraudulent activity in real-time is critical for protecting both businesses and consumers. The Real-Time Fraud Detection use case addresses a fundamental challenge: identifying sophisticated patterns in event networks and synthetic identity schemes as they emerge, using temporal graph analysis to engineer features for machine learning models. By leveraging Neo4j's graph database capabilities and Cypher 25, organizations can model complex event sequences, track entity relationships over time, and compute graph-based metrics that reveal patterns invisible to traditional approaches. These capabilities enable proactive fraud prevention, reduce financial losses, and maintain trust in digital financial ecosystems.
 
 ## 2. Scenario
 
@@ -27,7 +27,7 @@ To understand the importance of real-time fraud detection with temporal graphs, 
 * Effective fraud detection requires rich features that capture network effects and collaboration patterns.
 * Graph metrics like connected component size, diameter, and temporal velocity provide powerful signals.
 * Without structured graph analysis, ML models rely on limited transactional features and miss critical relationship patterns.
-* Real-time computation of graph features enables immediate fraud scoring and intervention.
+* Real-time computation of graph features enables immediate fraud scoring and intervention without contaminating features with future knowledge.
 
 These scenarios highlight the need for an advanced solution like **Neo4j's Real-Time Fraud Detection with Temporal Graphs**, which leverages graph technology to model event sequences, track entity relationships over time, and engineer powerful features for supervised machine learning in fraud detection.
 
@@ -70,7 +70,7 @@ The fraud detection solution follows a two-phase workflow with critical attentio
 3. **For each new event:** Features are extracted by querying the current components it connects to through shared entities
 4. Features feed into the trained ML model for immediate fraud prediction (typical query time: ~2ms)
 
-**Key principle:** An event's risk is assessed based on the pre-existing components it connects to or bridges, not based on the component it eventually becomes part of. This ensures temporal consistency between training and production.
+**_Key principle: An event's risk is assessed based on the pre-existing components it connects to or bridges, not based on the component it eventually becomes part of. This ensures temporal consistency between training and production._**
 
 ## 4. Modelling
 
@@ -134,8 +134,9 @@ Below are the fields required to get started:
 
 **ComponentNode Label:**
 * Applied to Event nodes that have been processed and incorporated into the COMPONENT_PARENT structure
-* Used to track which events are already part of the connected component analysis
-* Enables incremental updates by identifying new events with `Event&!ComponentNode`
+* Marks which events are already part of the connected component analysis, enabling efficient incremental processing
+* Enables incremental updates by identifying new events with the pattern `Event&!ComponentNode`
+* Note: Events can have multiple labels in Neo4j - the ComponentNode label coexists with the Event label
 * Removed during cleanup to reset the analysis
 
 ### 4.2. Demo Data
@@ -325,7 +326,7 @@ Define parameters for temporal analysis and testing
 }
 ```
 
-#### 5.1.1. Alternative dataset
+#### 5.1.2. Alternative dataset
 
 ```cypher
 :param {
