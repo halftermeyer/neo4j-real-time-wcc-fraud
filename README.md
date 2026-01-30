@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-In the rapidly evolving landscape of financial services, particularly in buy-now-pay-later (BNPL) and online loan marketplaces, detecting fraudulent activity in real-time is critical for protecting both businesses and consumers. The Real-Time Fraud Detection use case addresses a fundamental challenge: identifying sophisticated patterns in event networks and synthetic identity schemes as they emerge, using temporal graph analysis to engineer features for machine learning models. By leveraging Neo4j's graph database capabilities and Cypher 25, organizations can model complex event sequences, track entity relationships over time, and compute graph-based metrics that reveal patterns invisible to traditional approaches. These capabilities enable proactive fraud prevention, reduce financial losses, and maintain trust in digital financial ecosystems.
+In the rapidly evolving landscape of financial services, particularly in buy-now-pay-later (BNPL) and digital lending platforms, detecting fraudulent activity in real-time is critical for protecting both businesses and consumers. The Real-Time Fraud Detection use case addresses a fundamental challenge: identifying sophisticated patterns in event networks and synthetic identity schemes as they emerge, using temporal graph analysis to engineer features for machine learning models. By leveraging Neo4j's graph database capabilities and Cypher 25, organizations can model complex event sequences, track entity relationships over time, and compute graph-based metrics that reveal patterns invisible to traditional approaches. These capabilities enable proactive fraud prevention, reduce financial losses, and maintain trust in digital financial ecosystems.
 
 ## 2. Scenario
 
@@ -27,7 +27,7 @@ To understand the importance of real-time fraud detection with temporal graphs, 
 * Effective fraud detection requires rich features that capture network effects and collaboration patterns.
 * Graph metrics like connected component size, diameter, and temporal velocity provide powerful signals.
 * Without structured graph analysis, ML models rely on limited transactional features and miss critical relationship patterns.
-* Real-time computation of graph features enables immediate fraud scoring and intervention without contaminating features with future knowledge.
+* Real-time computation of graph features enables immediate fraud scoring and intervention.
 
 These scenarios highlight the need for an advanced solution like **Neo4j's Real-Time Fraud Detection with Temporal Graphs**, which leverages graph technology to model event sequences, track entity relationships over time, and engineer powerful features for supervised machine learning in fraud detection.
 
@@ -70,7 +70,7 @@ The fraud detection solution follows a two-phase workflow with critical attentio
 3. **For each new event:** Features are extracted by querying the current components it connects to through shared entities
 4. Features feed into the trained ML model for immediate fraud prediction (typical query time: ~2ms)
 
-**_Key principle: An event's risk is assessed based on the pre-existing components it connects to or bridges, not based on the component it eventually becomes part of. This ensures temporal consistency between training and production._**
+**Key principle:** An event's risk is assessed based on the pre-existing components it connects to or bridges, not based on the component it eventually becomes part of. This ensures temporal consistency between training and production.
 
 ## 4. Modelling
 
@@ -134,9 +134,8 @@ Below are the fields required to get started:
 
 **ComponentNode Label:**
 * Applied to Event nodes that have been processed and incorporated into the COMPONENT_PARENT structure
-* Marks which events are already part of the connected component analysis, enabling efficient incremental processing
-* Enables incremental updates by identifying new events with the pattern `Event&!ComponentNode`
-* Note: Events can have multiple labels in Neo4j - the ComponentNode label coexists with the Event label
+* Used to track which events are already part of the connected component analysis
+* Enables incremental updates by identifying new events with `Event&!ComponentNode`
 * Removed during cleanup to reset the analysis
 
 ### 4.2. Demo Data
@@ -164,119 +163,107 @@ FOR (e:Event) ON (e.timestamp);
 
 CALL db.awaitIndexes(300);
 
-// Create all nodes and relationships in single statement
-CREATE
-  // Email addresses
-  (email_fraud1:EmailAddress {email: 'fraud@example.com'}),
-  (email_fraud2:EmailAddress {email: 'fraud2@example.com'}),
-  (email_legit1:EmailAddress {email: 'legitimate1@example.com'}),
-  (email_legit2:EmailAddress {email: 'legitimate2@example.com'}),
-  (email_legit3:EmailAddress {email: 'legitimate3@example.com'}),
-  
-  // IP addresses
-  (ip1:IPAddress {ip_address: '192.168.1.10'}),
-  (ip2:IPAddress {ip_address: '192.168.1.11'}),
-  (ip3:IPAddress {ip_address: '10.0.0.5'}),
-  (ip4:IPAddress {ip_address: '172.16.0.20'}),
-  (ip5:IPAddress {ip_address: '203.0.113.50'}),
-  
-  // Credit cards
-  (cc_stolen:CreditCard {credit_card_id: 'cc_stolen_001'}),
-  (cc_legit1:CreditCard {credit_card_id: 'cc_legit_001'}),
-  (cc_legit2:CreditCard {credit_card_id: 'cc_legit_002'}),
-  (cc_legit3:CreditCard {credit_card_id: 'cc_legit_003'}),
-  
-  // Devices
-  (dev_fraud1:Device {device_id: 'device_fraud_001'}),
-  (dev_fraud2:Device {device_id: 'device_fraud_002'}),
-  (dev_legit1:Device {device_id: 'device_legit_001'}),
-  (dev_legit2:Device {device_id: 'device_legit_002'}),
-  (dev_legit3:Device {device_id: 'device_legit_003'}),
-  
-  // Bank accounts
-  (ba_fraud1:BankAccount {bank_account_id: 'ba_fraud_001'}),
-  (ba_fraud2:BankAccount {bank_account_id: 'ba_fraud_002'}),
-  (ba_legit1:BankAccount {bank_account_id: 'ba_legit_001'}),
-  (ba_legit2:BankAccount {bank_account_id: 'ba_legit_002'}),
-  
-  // Sessions
-  (sess1:Session {session_id: 'session_001'}),
-  (sess2:Session {session_id: 'session_002'}),
-  (sess3:Session {session_id: 'session_003'}),
-  (sess4:Session {session_id: 'session_004'}),
-  (sess5:Session {session_id: 'session_005'}),
-  (sess6:Session {session_id: 'session_006'}),
-  (sess7:Session {session_id: 'session_007'}),
-  (sess8:Session {session_id: 'session_008'}),
-  
-  // Events - Fraud Ring A (chain structure, diameter > 1)
-  (evt_a1:Event {event_id: 'evt_fraud_a1', timestamp: datetime('2024-01-15T10:00:00Z'), interaction_type: 'login', transaction_amount: null}),
-  (evt_a2:Event {event_id: 'evt_fraud_a2', timestamp: datetime('2024-01-15T10:02:00Z'), interaction_type: 'transaction', transaction_amount: 1500.00}),
-  (evt_a3:Event {event_id: 'evt_fraud_a3', timestamp: datetime('2024-01-15T10:05:00Z'), interaction_type: 'transaction', transaction_amount: 2300.00}),
-  (evt_a4:Event {event_id: 'evt_fraud_a4', timestamp: datetime('2024-01-15T10:08:00Z'), interaction_type: 'update', transaction_amount: null}),
-  
-  // Events - Fraud Ring B (star structure, diameter = 1)
-  (evt_b1:Event {event_id: 'evt_fraud_b1', timestamp: datetime('2024-01-15T14:00:00Z'), interaction_type: 'transaction', transaction_amount: 500.00}),
-  (evt_b2:Event {event_id: 'evt_fraud_b2', timestamp: datetime('2024-01-15T14:30:00Z'), interaction_type: 'transaction', transaction_amount: 750.00}),
-  (evt_b3:Event {event_id: 'evt_fraud_b3', timestamp: datetime('2024-01-15T15:00:00Z'), interaction_type: 'transaction', transaction_amount: 1200.00}),
-  
-  // Event - Bridging event
-  (evt_bridge:Event {event_id: 'evt_bridge', timestamp: datetime('2024-01-15T16:00:00Z'), interaction_type: 'transaction', transaction_amount: 3500.00}),
-  
-  // Events - Legitimate isolated events
-  (evt_leg1:Event {event_id: 'evt_legit_1', timestamp: datetime('2024-01-15T09:00:00Z'), interaction_type: 'login', transaction_amount: null}),
-  (evt_leg2:Event {event_id: 'evt_legit_2', timestamp: datetime('2024-01-15T11:00:00Z'), interaction_type: 'transaction', transaction_amount: 45.00}),
-  (evt_leg3:Event {event_id: 'evt_legit_3', timestamp: datetime('2024-01-15T13:00:00Z'), interaction_type: 'update', transaction_amount: null}),
-  
-  // Fraud Ring A relationships (chain: a1←IP1→a2←Email2/Bank→a3←Device2→a4)
-  (evt_a1)-[:WITH]->(ip1),
-  (evt_a1)-[:WITH]->(email_fraud1),
-  (evt_a1)-[:WITH]->(sess1),
-  (evt_a2)-[:WITH]->(ip1),
-  (evt_a2)-[:WITH]->(email_fraud2),
-  (evt_a2)-[:WITH]->(ba_fraud1),
-  (evt_a2)-[:WITH]->(sess2),
-  (evt_a3)-[:WITH]->(email_fraud2),
-  (evt_a3)-[:WITH]->(ba_fraud1),
-  (evt_a3)-[:WITH]->(dev_fraud2),
-  (evt_a3)-[:WITH]->(sess3),
-  (evt_a4)-[:WITH]->(dev_fraud2),
-  (evt_a4)-[:WITH]->(ip2),
-  (evt_a4)-[:WITH]->(sess4),
-  
-  // Fraud Ring B relationships (star: all share credit card and device)
-  (evt_b1)-[:WITH]->(cc_stolen),
-  (evt_b1)-[:WITH]->(dev_fraud1),
-  (evt_b1)-[:WITH]->(ip3),
-  (evt_b1)-[:WITH]->(sess5),
-  (evt_b2)-[:WITH]->(cc_stolen),
-  (evt_b2)-[:WITH]->(dev_fraud1),
-  (evt_b2)-[:WITH]->(ip4),
-  (evt_b2)-[:WITH]->(sess6),
-  (evt_b3)-[:WITH]->(cc_stolen),
-  (evt_b3)-[:WITH]->(dev_fraud1),
-  (evt_b3)-[:WITH]->(ip5),
-  (evt_b3)-[:WITH]->(sess7),
-  
-  // Bridging event relationships
-  (evt_bridge)-[:WITH]->(ip1),
-  (evt_bridge)-[:WITH]->(cc_stolen),
-  (evt_bridge)-[:WITH]->(dev_fraud1),
-  (evt_bridge)-[:WITH]->(ba_fraud2),
-  (evt_bridge)-[:WITH]->(sess8),
-  
-  // Legitimate event relationships (isolated)
-  (evt_leg1)-[:WITH]->(email_legit1),
-  (evt_leg1)-[:WITH]->(cc_legit1),
-  (evt_leg1)-[:WITH]->(dev_legit1),
-  (evt_leg2)-[:WITH]->(email_legit2),
-  (evt_leg2)-[:WITH]->(cc_legit2),
-  (evt_leg2)-[:WITH]->(dev_legit2),
-  (evt_leg2)-[:WITH]->(ba_legit1),
-  (evt_leg3)-[:WITH]->(email_legit3),
-  (evt_leg3)-[:WITH]->(cc_legit3),
-  (evt_leg3)-[:WITH]->(dev_legit3),
-  (evt_leg3)-[:WITH]->(ba_legit2);
+// Create entity nodes
+CREATE (:EmailAddress {email: 'fraud@example.com'});
+CREATE (:EmailAddress {email: 'fraud2@example.com'});
+CREATE (:EmailAddress {email: 'legitimate1@example.com'});
+CREATE (:EmailAddress {email: 'legitimate2@example.com'});
+CREATE (:EmailAddress {email: 'legitimate3@example.com'});
+CREATE (:IPAddress {ip_address: '192.168.1.10'});
+CREATE (:IPAddress {ip_address: '192.168.1.11'});
+CREATE (:IPAddress {ip_address: '10.0.0.5'});
+CREATE (:IPAddress {ip_address: '172.16.0.20'});
+CREATE (:IPAddress {ip_address: '203.0.113.50'});
+CREATE (:CreditCard {credit_card_id: 'cc_stolen_001'});
+CREATE (:CreditCard {credit_card_id: 'cc_legit_001'});
+CREATE (:CreditCard {credit_card_id: 'cc_legit_002'});
+CREATE (:CreditCard {credit_card_id: 'cc_legit_003'});
+CREATE (:Device {device_id: 'device_fraud_001'});
+CREATE (:Device {device_id: 'device_fraud_002'});
+CREATE (:Device {device_id: 'device_legit_001'});
+CREATE (:Device {device_id: 'device_legit_002'});
+CREATE (:Device {device_id: 'device_legit_003'});
+CREATE (:BankAccount {bank_account_id: 'ba_fraud_001'});
+CREATE (:BankAccount {bank_account_id: 'ba_fraud_002'});
+CREATE (:BankAccount {bank_account_id: 'ba_legit_001'});
+CREATE (:BankAccount {bank_account_id: 'ba_legit_002'});
+CREATE (:Session {session_id: 'session_001'});
+CREATE (:Session {session_id: 'session_002'});
+CREATE (:Session {session_id: 'session_003'});
+CREATE (:Session {session_id: 'session_004'});
+CREATE (:Session {session_id: 'session_005'});
+CREATE (:Session {session_id: 'session_006'});
+CREATE (:Session {session_id: 'session_007'});
+CREATE (:Session {session_id: 'session_008'});
+
+// Create events - Fraud Ring A (chain structure, diameter > 1)
+CREATE (:Event {event_id: 'evt_fraud_a1', timestamp: datetime('2024-01-15T10:00:00Z'), interaction_type: 'login', transaction_amount: null});
+CREATE (:Event {event_id: 'evt_fraud_a2', timestamp: datetime('2024-01-15T10:02:00Z'), interaction_type: 'transaction', transaction_amount: 1500.00});
+CREATE (:Event {event_id: 'evt_fraud_a3', timestamp: datetime('2024-01-15T10:05:00Z'), interaction_type: 'transaction', transaction_amount: 2300.00});
+CREATE (:Event {event_id: 'evt_fraud_a4', timestamp: datetime('2024-01-15T10:08:00Z'), interaction_type: 'update', transaction_amount: null});
+
+// Create events - Fraud Ring B (star structure, diameter = 1)
+CREATE (:Event {event_id: 'evt_fraud_b1', timestamp: datetime('2024-01-15T14:00:00Z'), interaction_type: 'transaction', transaction_amount: 500.00});
+CREATE (:Event {event_id: 'evt_fraud_b2', timestamp: datetime('2024-01-15T14:30:00Z'), interaction_type: 'transaction', transaction_amount: 750.00});
+CREATE (:Event {event_id: 'evt_fraud_b3', timestamp: datetime('2024-01-15T15:00:00Z'), interaction_type: 'transaction', transaction_amount: 1200.00});
+
+// Create event - Bridging event (connects both rings)
+CREATE (:Event {event_id: 'evt_bridge', timestamp: datetime('2024-01-15T16:00:00Z'), interaction_type: 'transaction', transaction_amount: 3500.00});
+
+// Create events - Legitimate isolated events
+CREATE (:Event {event_id: 'evt_legit_1', timestamp: datetime('2024-01-15T09:00:00Z'), interaction_type: 'login', transaction_amount: null});
+CREATE (:Event {event_id: 'evt_legit_2', timestamp: datetime('2024-01-15T11:00:00Z'), interaction_type: 'transaction', transaction_amount: 45.00});
+CREATE (:Event {event_id: 'evt_legit_3', timestamp: datetime('2024-01-15T13:00:00Z'), interaction_type: 'update', transaction_amount: null});
+
+// Create WITH relationships - Fraud Ring A (chain: a1←IP1→a2←Email2/Bank→a3←Device2→a4)
+MATCH (e:Event {event_id: 'evt_fraud_a1'}), (ip:IPAddress {ip_address: '192.168.1.10'}) CREATE (e)-[:WITH]->(ip);
+MATCH (e:Event {event_id: 'evt_fraud_a1'}), (email:EmailAddress {email: 'fraud@example.com'}) CREATE (e)-[:WITH]->(email);
+MATCH (e:Event {event_id: 'evt_fraud_a1'}), (s:Session {session_id: 'session_001'}) CREATE (e)-[:WITH]->(s);
+MATCH (e:Event {event_id: 'evt_fraud_a2'}), (ip:IPAddress {ip_address: '192.168.1.10'}) CREATE (e)-[:WITH]->(ip);
+MATCH (e:Event {event_id: 'evt_fraud_a2'}), (email:EmailAddress {email: 'fraud2@example.com'}) CREATE (e)-[:WITH]->(email);
+MATCH (e:Event {event_id: 'evt_fraud_a2'}), (ba:BankAccount {bank_account_id: 'ba_fraud_001'}) CREATE (e)-[:WITH]->(ba);
+MATCH (e:Event {event_id: 'evt_fraud_a2'}), (s:Session {session_id: 'session_002'}) CREATE (e)-[:WITH]->(s);
+MATCH (e:Event {event_id: 'evt_fraud_a3'}), (email:EmailAddress {email: 'fraud2@example.com'}) CREATE (e)-[:WITH]->(email);
+MATCH (e:Event {event_id: 'evt_fraud_a3'}), (ba:BankAccount {bank_account_id: 'ba_fraud_001'}) CREATE (e)-[:WITH]->(ba);
+MATCH (e:Event {event_id: 'evt_fraud_a3'}), (d:Device {device_id: 'device_fraud_002'}) CREATE (e)-[:WITH]->(d);
+MATCH (e:Event {event_id: 'evt_fraud_a3'}), (s:Session {session_id: 'session_003'}) CREATE (e)-[:WITH]->(s);
+MATCH (e:Event {event_id: 'evt_fraud_a4'}), (d:Device {device_id: 'device_fraud_002'}) CREATE (e)-[:WITH]->(d);
+MATCH (e:Event {event_id: 'evt_fraud_a4'}), (ip:IPAddress {ip_address: '192.168.1.11'}) CREATE (e)-[:WITH]->(ip);
+MATCH (e:Event {event_id: 'evt_fraud_a4'}), (s:Session {session_id: 'session_004'}) CREATE (e)-[:WITH]->(s);
+
+// Create WITH relationships - Fraud Ring B (star: all share credit card and device)
+MATCH (e:Event {event_id: 'evt_fraud_b1'}), (cc:CreditCard {credit_card_id: 'cc_stolen_001'}) CREATE (e)-[:WITH]->(cc);
+MATCH (e:Event {event_id: 'evt_fraud_b1'}), (d:Device {device_id: 'device_fraud_001'}) CREATE (e)-[:WITH]->(d);
+MATCH (e:Event {event_id: 'evt_fraud_b1'}), (ip:IPAddress {ip_address: '10.0.0.5'}) CREATE (e)-[:WITH]->(ip);
+MATCH (e:Event {event_id: 'evt_fraud_b1'}), (s:Session {session_id: 'session_005'}) CREATE (e)-[:WITH]->(s);
+MATCH (e:Event {event_id: 'evt_fraud_b2'}), (cc:CreditCard {credit_card_id: 'cc_stolen_001'}) CREATE (e)-[:WITH]->(cc);
+MATCH (e:Event {event_id: 'evt_fraud_b2'}), (d:Device {device_id: 'device_fraud_001'}) CREATE (e)-[:WITH]->(d);
+MATCH (e:Event {event_id: 'evt_fraud_b2'}), (ip:IPAddress {ip_address: '172.16.0.20'}) CREATE (e)-[:WITH]->(ip);
+MATCH (e:Event {event_id: 'evt_fraud_b2'}), (s:Session {session_id: 'session_006'}) CREATE (e)-[:WITH]->(s);
+MATCH (e:Event {event_id: 'evt_fraud_b3'}), (cc:CreditCard {credit_card_id: 'cc_stolen_001'}) CREATE (e)-[:WITH]->(cc);
+MATCH (e:Event {event_id: 'evt_fraud_b3'}), (d:Device {device_id: 'device_fraud_001'}) CREATE (e)-[:WITH]->(d);
+MATCH (e:Event {event_id: 'evt_fraud_b3'}), (ip:IPAddress {ip_address: '203.0.113.50'}) CREATE (e)-[:WITH]->(ip);
+MATCH (e:Event {event_id: 'evt_fraud_b3'}), (s:Session {session_id: 'session_007'}) CREATE (e)-[:WITH]->(s);
+
+// Create WITH relationships - Bridging event
+MATCH (e:Event {event_id: 'evt_bridge'}), (ip:IPAddress {ip_address: '192.168.1.10'}) CREATE (e)-[:WITH]->(ip);
+MATCH (e:Event {event_id: 'evt_bridge'}), (cc:CreditCard {credit_card_id: 'cc_stolen_001'}) CREATE (e)-[:WITH]->(cc);
+MATCH (e:Event {event_id: 'evt_bridge'}), (d:Device {device_id: 'device_fraud_001'}) CREATE (e)-[:WITH]->(d);
+MATCH (e:Event {event_id: 'evt_bridge'}), (ba:BankAccount {bank_account_id: 'ba_fraud_002'}) CREATE (e)-[:WITH]->(ba);
+MATCH (e:Event {event_id: 'evt_bridge'}), (s:Session {session_id: 'session_008'}) CREATE (e)-[:WITH]->(s);
+
+// Create WITH relationships - Legitimate events (isolated)
+MATCH (e:Event {event_id: 'evt_legit_1'}), (email:EmailAddress {email: 'legitimate1@example.com'}) CREATE (e)-[:WITH]->(email);
+MATCH (e:Event {event_id: 'evt_legit_1'}), (cc:CreditCard {credit_card_id: 'cc_legit_001'}) CREATE (e)-[:WITH]->(cc);
+MATCH (e:Event {event_id: 'evt_legit_1'}), (d:Device {device_id: 'device_legit_001'}) CREATE (e)-[:WITH]->(d);
+MATCH (e:Event {event_id: 'evt_legit_2'}), (email:EmailAddress {email: 'legitimate2@example.com'}) CREATE (e)-[:WITH]->(email);
+MATCH (e:Event {event_id: 'evt_legit_2'}), (cc:CreditCard {credit_card_id: 'cc_legit_002'}) CREATE (e)-[:WITH]->(cc);
+MATCH (e:Event {event_id: 'evt_legit_2'}), (d:Device {device_id: 'device_legit_002'}) CREATE (e)-[:WITH]->(d);
+MATCH (e:Event {event_id: 'evt_legit_2'}), (ba:BankAccount {bank_account_id: 'ba_legit_001'}) CREATE (e)-[:WITH]->(ba);
+MATCH (e:Event {event_id: 'evt_legit_3'}), (email:EmailAddress {email: 'legitimate3@example.com'}) CREATE (e)-[:WITH]->(email);
+MATCH (e:Event {event_id: 'evt_legit_3'}), (cc:CreditCard {credit_card_id: 'cc_legit_003'}) CREATE (e)-[:WITH]->(cc);
+MATCH (e:Event {event_id: 'evt_legit_3'}), (d:Device {device_id: 'device_legit_003'}) CREATE (e)-[:WITH]->(d);
+MATCH (e:Event {event_id: 'evt_legit_3'}), (ba:BankAccount {bank_account_id: 'ba_legit_002'}) CREATE (e)-[:WITH]->(ba);
 ```
 
 The dataset includes 11 events organized into:
@@ -348,9 +335,11 @@ Define parameters for temporal analysis and testing
 ```
 
 
-### 5.2. Create SEQUENTIALLY_RELATED Relationships
+### 5.2. Create SEQUENTIALLY_RELATED Relationships (Incremental Processing)
 
-This query creates temporal ordering relationships between consecutive events for each shared entity. The SEQUENTIALLY_RELATED relationship represents a strong indicator of potential collaboration (high probability that events sharing the same entity are related):
+This query creates temporal ordering relationships between consecutive events for each shared entity. The SEQUENTIALLY_RELATED relationship represents a strong indicator of potential collaboration (high probability that events sharing the same entity are related).
+
+**Use this approach for:** Incremental updates when new events arrive in streaming or near-real-time scenarios.
 
 ```cypher
 MATCH (thing:BankAccount|CreditCard|Device|EmailAddress|Event|IPAddress|PhoneNumber|Session)
@@ -359,9 +348,6 @@ CALL (thing) {
   WITH DISTINCT e
   ORDER BY e.timestamp
   WITH collect(e) AS events
-  WITH CASE size(events)
-    WHEN 1 THEN [events[0], null]
-    ELSE events END AS events
   UNWIND range(0, size(events)-2) AS ix
   WITH events[ix] AS source, events[ix+1] AS target
   MERGE (source)-[:SEQUENTIALLY_RELATED]->(target)
@@ -370,11 +356,61 @@ CALL (thing) {
 
 **Key optimization:** This query creates a path structure rather than a clique for events sharing the same entity. Since temporal ordering is transitive (if event A precedes B and B precedes C, then A transitively precedes C), we only need to connect consecutive events in chronological order. This dramatically reduces relationship count from O(n²) to O(n) for n events on the same entity, while preserving full graph connectivity through traversal patterns like `()-[:SEQUENTIALLY_RELATED*]->()`. For entities with many events (e.g., a popular IP address with 100 events), this saves 4,950 relationships per entity while maintaining the same analytical capabilities. This path optimization technique is detailed in [Mastering Fraud Detection with Temporal Graphs](https://neo4j.com/blog/developer/mastering-fraud-detection-temporal-graph/).
 
-**Note on concurrency:** This query uses non-concurrent transactions to avoid potential deadlocks when multiple transactions attempt to create relationships on the same events. For further performance optimization, the WCC batching technique described in Section 5.4 could be applied here to enable concurrent processing while avoiding crashes.
+**Note on concurrency:** This query uses non-concurrent transactions to avoid potential deadlocks when multiple transactions attempt to create relationships on the same events. For high-performance batch processing on large datasets, see the WCC-batched concurrent approach in Section 5.2.1.
 
-### 5.3. Efficient GDS Projection for Connected Components
+#### 5.2.1. Alternative: Concurrent Batch Creation with WCC Optimization
 
-Project the temporal graph for weakly connected component analysis using GDS. This projection is optimized for performance using techniques described in [Optimizing Weakly Connected Component Projections](https://neo4j.com/blog/developer/optimize-weakly-connected-component-projections/):
+For initial bulk loads or large-scale batch processing, this approach uses GDS weakly connected components to enable safe concurrent processing with significant performance improvements.
+
+**Use this approach for:** Initial bulk data loads or batch reprocessing where maximum performance is required.
+
+First, project the Event-Thing bipartite graph for WCC analysis:
+
+```cypher
+CYPHER runtime=parallel
+MATCH (source:Event)
+OPTIONAL MATCH (source)-[:WITH]->(target)
+RETURN gds.graph.project('wcc_graph', source, target, {});
+```
+
+Then create SEQUENTIALLY_RELATED relationships using WCC-guided batching:
+
+```cypher
+CYPHER 25
+CALL gds.wcc.stream('wcc_graph')
+YIELD nodeId, componentId
+WITH gds.util.asNode(nodeId) AS thing, componentId AS community
+FILTER thing:BankAccount|CreditCard|Device|EmailAddress|IPAddress|PhoneNumber|Session
+WITH community, collect(thing) AS things
+CALL (things) {
+  UNWIND things AS thing
+  CALL (thing) {
+    MATCH (e:Event)-[:WITH]->(thing)
+    WITH DISTINCT e
+    ORDER BY e.timestamp
+    WITH collect(e) AS events
+    UNWIND range(0, size(events)-2) AS ix
+    WITH events[ix] AS source, events[ix+1] AS target
+    MERGE (source)-[:SEQUENTIALLY_RELATED]->(target)
+  }
+} IN 8 CONCURRENT TRANSACTIONS OF 100 ROWS  // Adjust based on infrastructure
+```
+
+**Performance characteristics:**
+
+* **Proven speedup:** On the 7,800-event test dataset, this approach is approximately **4.5x faster** than incremental processing
+* **Safe concurrency:** WCC identifies independent communities - entities in different communities share no events, eliminating deadlock risk during concurrent processing
+* **Batch efficiency:** Processes 8 concurrent transactions × 100 communities = 800 communities in parallel
+* **Infrastructure scaling:** Performance scales with available CPU cores and memory - adding resources directly improves throughput, making this approach ideal for production-scale bulk loads
+
+This WCC-batched optimization technique is detailed in [WCC Batching to Avoid Query Crashes](https://neo4j.com/blog/developer/wcc-to-avoid-cypher-query-crashing/) and [Optimizing WCC Projections](https://neo4j.com/blog/developer/optimize-weakly-connected-component-projections/).
+
+
+### 5.3. Build COMPONENT_PARENT Union-Find Structure
+
+
+
+First, project the SEQUENTIALLY_RELATED graph for weakly connected component analysis:
 
 ```cypher
 CYPHER runtime=parallel
@@ -384,12 +420,7 @@ RETURN gds.graph.project(
   'wcc_graph', source, target, {});
 ```
 
-<img width="1012" height="597" alt="graph_seq" src="https://github.com/user-attachments/assets/4c2180a3-6946-4dd9-96a6-6e65a92c9326" />
-
-
-### 5.4. Build COMPONENT_PARENT Union-Find Structure
-
-This query uses GDS to identify connected components and builds the COMPONENT_PARENT union-find forest structure in batches. **This is where the WCC batching optimization technique is applied** - using GDS WCC to identify components upfront, then batching the union-find structure creation by processing 100 connected components concurrently. This approach, detailed in [WCC Batching to Avoid Query Crashes](https://neo4j.com/blog/developer/wcc-to-avoid-cypher-query-crashing/) and [Optimizing WCC Projections](https://neo4j.com/blog/developer/optimize-weakly-connected-component-projections/), avoids query crashes and enables efficient parallel processing:
+Then build the COMPONENT_PARENT structure using WCC-guided batching. This query uses GDS to identify connected components and builds the COMPONENT_PARENT union-find forest structure in batches. **This is where the WCC batching optimization technique is applied** - using GDS WCC to identify components upfront, then batching the union-find structure creation by processing 100 connected components concurrently. This approach, detailed in [WCC Batching to Avoid Query Crashes](https://neo4j.com/blog/developer/wcc-to-avoid-cypher-query-crashing/) and [Optimizing WCC Projections](https://neo4j.com/blog/developer/optimize-weakly-connected-component-projections/), avoids query crashes and enables efficient parallel processing:
 
 ```cypher
 CALL gds.wcc.stream('wcc_graph')
@@ -425,7 +456,7 @@ CALL (events) {
 * Within each CC, events are ordered chronologically to build the union-find structure
 * The COMPONENT_PARENT relationships form a forest where each tree represents a connected component
 
-### 5.5. Incremental Update of Connected Components
+### 5.4. Incremental Update of Connected Components
 
 For real-time fraud detection, incrementally update the structure as new events arrive:
 
@@ -445,7 +476,7 @@ CALL (e) {
 <img width="1050" height="637" alt="graph" src="https://github.com/user-attachments/assets/f128c1e3-7a9e-4819-bb89-4e2247df0e7b" />
 
 
-### 5.6. Show Event's Connected Component with Context
+### 5.5. Show Event's Connected Component with Context
 
 View a specific event's connected component with all related entities:
 
@@ -457,7 +488,7 @@ RETURN [(ev)-[r:WITH]->(x)| [ev, r, x]] AS events_with_things
 
 <img width="1012" height="597" alt="comp_in_context" src="https://github.com/user-attachments/assets/95bcc6ef-36ae-498d-b314-d38e1d0f88dc" />
 
-### 5.7. Temporal Analysis: Connected Components As-Of Date
+### 5.6. Temporal Analysis: Connected Components As-Of Date
 
 Query the state of connected components as they existed at a specific point in time. This is crucial for training ML models without future knowledge contamination:
 
@@ -482,7 +513,7 @@ evt_legit_3,[evt_legit_3]
 evt_legit_2,[evt_legit_2]
 ```
 
-### 5.8. Compute Component Metrics
+### 5.7. Compute Component Metrics
 
 This query computes metrics for each connected component from every ComponentNode event's temporal perspective. Metrics are materialized as properties on ComponentNode events, representing the component state as it existed at each event's timestamp. These metrics will later be used to extract features for individual events:
 
@@ -576,7 +607,7 @@ The union-find COMPONENT_PARENT structure enables retrieving a source-relative c
   - Stored as `component_velocity`
 * These metrics are computed once and reused for feature extraction
 
-### 5.9. Extract Features for Training Dataset
+### 5.8. Extract Features for Training Dataset
 
 This query extracts features for events in the training dataset by examining the components they connect to through shared entities. This ensures temporal consistency - we only look at components that existed at or before each event's timestamp:
 
@@ -622,7 +653,7 @@ evt_legit_2,null,null,null,0
 * Aggregates metrics from all connected components (max values and count)
 * Returns features in format suitable for ML training pipeline
 
-### 5.10. Extract Features for Real-Time Scoring
+### 5.9. Extract Features for Real-Time Scoring
 
 This query extracts the same features for a new incoming event, enabling real-time fraud scoring:
 
@@ -668,7 +699,7 @@ evt_bridge,4,3,0.008333333333333333,2
 * Returns identical features as training query
 * **Performance:** Typical execution time ~2ms, enabling real-time fraud detection
 
-### 5.11. Clean Up for Re-analysis
+### 5.10. Clean Up for Re-analysis
 
 Remove analysis structures to start fresh:
 
