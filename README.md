@@ -370,14 +370,14 @@ First, project the Event-Thing bipartite graph for WCC analysis:
 CYPHER runtime=parallel
 MATCH (source:Event)
 OPTIONAL MATCH (source)-[:WITH]->(target)
-RETURN gds.graph.project('wcc_graph', source, target, {});
+RETURN gds.graph.project('event_thing_graph', source, target, {});
 ```
 
 Then create SEQUENTIALLY_RELATED relationships using WCC-guided batching:
 
 ```cypher
 CYPHER 25
-CALL gds.wcc.stream('wcc_graph')
+CALL gds.wcc.stream('event_thing_graph')
 YIELD nodeId, componentId
 WITH gds.util.asNode(nodeId) AS thing, componentId AS community
 FILTER thing:BankAccount|CreditCard|Device|EmailAddress|IPAddress|PhoneNumber|Session
@@ -417,13 +417,13 @@ CYPHER runtime=parallel
 MATCH (source:Event)
 OPTIONAL MATCH (source)-[:SEQUENTIALLY_RELATED]->(target)
 RETURN gds.graph.project(
-  'wcc_graph', source, target, {});
+  'seq_rel_event_graph', source, target, {});
 ```
 
 Then build the COMPONENT_PARENT structure using WCC-guided batching. This query uses GDS to identify connected components and builds the COMPONENT_PARENT union-find forest structure in batches. **This is where the WCC batching optimization technique is applied** - using GDS WCC to identify components upfront, then batching the union-find structure creation by processing 100 connected components concurrently. This approach, detailed in [WCC Batching to Avoid Query Crashes](https://neo4j.com/blog/developer/wcc-to-avoid-cypher-query-crashing/) and [Optimizing WCC Projections](https://neo4j.com/blog/developer/optimize-weakly-connected-component-projections/), avoids query crashes and enables efficient parallel processing:
 
 ```cypher
-CALL gds.wcc.stream('wcc_graph')
+CALL gds.wcc.stream('seq_rel_event_graph')
 YIELD nodeId, componentId
 WITH gds.util.asNode(nodeId) AS event, componentId
 WITH componentId, collect(event) AS events
